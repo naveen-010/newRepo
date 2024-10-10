@@ -1,4 +1,6 @@
 # calendar 180
+import os
+import csv
 import datetime
 from prettytable import PrettyTable
 
@@ -8,13 +10,12 @@ months = [ "January", "February", "March", "April", "May", "June", "July", "Augu
 
 shortcutsTable = PrettyTable(["Shortcuts" , "Description"])
 events_table_header_for_printing = PrettyTable(["S.No." , "Event Name" , "Event attributes"])
-events_table_header_for_saving= ['title' , 'date' , 'location', 'start time' , 'end time' , 'duartion', 'category']
+events_table_header_for_saving= ['Title' , 'Date' , 'Location', 'Start Time' , 'End Time' , 'Duartion', 'Category']
+events_table_list_for_savings = []
 
 shortcuts_in_monthview = [
     ["n", "Next"],
     ["p", "Previous"],
-    # ["r", "Show/Hide Reminders"],
-    # ["h", "Show/Hide Holidays"],
     ["g", "Go to a specific month"],
     ["y", "Change to Year View"],
     ["m" , "Manage events"],
@@ -27,12 +28,12 @@ shortcuts_in_eventview = [
         ["r" , "Remove an eventsvent "],
         ["v" , "View all events"],
         ["e" , "Edit an existing event"],
-        ["s" , "Save changes"],
+        #["s" , "Save changes"],
         ["q", "Exit"],
         ["?" , "Show this table"],
         ]
 events_list = []
-# options = ["Location" ,"Category" ,"Date" , "Start Time", "End Time" , "Duration"]
+options = ["Date(d)", "Location(l)" ,"Category(eg. bday)(c)" , "Start Time(st)", "End Time(et)" , "Duration(dur)"]
 
 shortcuts_in_yearview= [
     ["n", "Next"],
@@ -65,11 +66,6 @@ class Event:
 
     def update(self , option, newval):
         setattr(self , option , newval)
-
-    # def save(self):
-
-
-
 
 def is_leap(year):
     if year % 400 == 0 or year % 100 != 0 and year % 4 == 0:
@@ -123,67 +119,38 @@ def add_event():
     new_event = Event(title)
     events_list.append(new_event)
 
-    options = ["Date(d)", "Location(l)" ,"Category(eg. bday)(c)" , "Start Time(st)", "End Time(et)" , "Duration(dur)"]
-    o = ['d' , 'l', 'c' , 'st' , 'et' , 'dur']
-   
-    while True:
-        selected_option = input(f"Which option do you want to add? {', '.join(options)}  or type 'done' to finish: ").strip().lower()
-        if selected_option == 'd':
-            date = input("Enter the date in DD-MM-YYYY format: ")
-            result = isDate(date)
-            if result is None:
-                print("Invalid date.")
-                continue
-            new_event.add('date', value)
-            o.remove('d')
-            print("Date has been added.")
-            # else:
-            #     value = selected_option
+    options = {
+        'd': ("Date", "Enter the date in DD-MM-YYYY format: ", 'date', isDate),
+        'l': ("Location", "Enter the location: ", 'location', None),
+        'c': ("Category", "Enter the category: ", 'category', None),
+        'st': ("Start Time", "Enter the time in 24 hrs HH:MM format: ", 'start_time', isTime),
+        'et': ("End Time", "Enter the time in 24 hrs HH:MM format: ", 'end_time', isTime),
+        'dur': ("Duration", "Enter duration in minutes: ", 'duration', None)
+    }
 
-        elif selected_option == 'st':
-            t = input("Enter the time in 24 hrs HH:MM format: ")
-            if not isTime(t):
-                print("Invalid time.")
-                continue
-            new_event.add('start_time', t)
-            o.remove('st')
-            print("Start Time has been added.")
- 
-        elif selected_option == 'et':
-            t = input("Enter the time in 24 hrs HH:MM format: ")
-            if not isTime(t):
-                print("Invalid time.")
-                continue
-            new_event.add('end_time', t)
-            o.remove('et')
-            print("End Time has been added.")
- 
-        elif selected_option == 'dur':
-            dur = input("Enter duration in minutes:")
-            new_event.add('duration', value)
-            o.remove('duration')
-            print("Duration has been added.")
+    while options:
+        selected_option = input(f"Which option do you want to add? {', '.join([f'{key}: {value[0]}' for key, value in options.items()])} or type 'done' to finish: ")
 
-        elif selected_option in o:
-            if selected_option == 'l':
-                value = input("Enter the location: ")
-                new_event.add('location', value)
-                print("Location has been added.")
-
-            elif selected_option == 'c':
-                value = input("Enter the category:")
-                new_event.add('category', value)
-                print("Category has been added.")
-
-            o.remove(selected_option)
-
-        elif selected_option == 'done':
+        if selected_option == 'done':
             break
 
-        else:
-            print("Invalid option.")
-    print("Event added successfully!")
+        if selected_option in options:
+            option_details = options[selected_option]
+            value = input(option_details[1])
 
+            # Validate the input if a validation function is provided
+            if option_details[3] and not option_details[3](value):
+                print(f"Invalid {option_details[0].lower()}.")
+                continue
+
+            new_event.add(option_details[2], value)
+            print(f"{option_details[0]} has been added.")
+            del options[selected_option]  # Remove added option from the list
+
+        else:
+            print("Invalid option. Please select a valid option.")
+
+    print("Event added successfully!")
 
 
 def remove_event():
@@ -235,7 +202,29 @@ def view_events():
 
     for i in range(len(events_list)):
         print(f"{i + 1}. {events_list[i].title}")
- 
+
+
+def save_events():
+    for i in events_list:
+        events_table_list_for_savings.append( [getattr(i, attr) if getattr(i, attr) else "None" for attr in ['title', 'date', 'location', 'start_time', 'end_time', 'duration', 'category']])
+    if not os.path.exists('events.csv'):
+        with open('events.csv', mode='w', newline='') as csv_file:
+            writer = csv.writer(csv_file)
+            
+            writer.writerow(events_table_header_for_saving)
+            
+            writer.writerows(events_table_list_for_savings)
+
+    else:
+        with open('events.csv', mode='a', newline='') as csv_file:
+            writer = csv.writer(csv_file)
+            
+            
+            writer.writerows(events_table_list_for_savings)
+
+
+
+
 
 def cal_d(month, year):
     # Number of leap years from 1-(year/year+1)
@@ -446,7 +435,7 @@ while True:
                     print(shortcutsTable)
 
                 elif x == 'q':
-                    
+                    save_events()
                     break
 
                 else :
@@ -524,6 +513,7 @@ while True:
             shortcutsTable.clear_rows()
             shortcutsTable.add_rows(shortcuts_in_yearview)
             print(shortcutsTable)
+
         elif x == "q":
             break
         else:
