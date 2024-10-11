@@ -4,13 +4,37 @@ import csv
 import datetime
 from prettytable import PrettyTable
 
-months = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", ]
+months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
 
 
+shortcutsTable = PrettyTable(["Shortcuts", "Description"])
 
-shortcutsTable = PrettyTable(["Shortcuts" , "Description"])
-events_table_header_for_printing = PrettyTable(["S.No." , "Event Name" , "Event attributes"])
-events_table_header_for_saving= ['Title' , 'Date' , 'Location', 'Start Time' , 'End Time' , 'Duartion', 'Category']
+events_table_header_for_printing = PrettyTable(
+    ["S.No.", "Event Name", "Event attributes"]
+)
+
+events_table_header_for_saving = [
+    "Title",
+    "Date",
+    "Location",
+    "Start Time",
+    "End Time",
+    "Duartion",
+    "Category",
+]
 events_table_list_for_savings = []
 
 shortcuts_in_monthview = [
@@ -18,24 +42,31 @@ shortcuts_in_monthview = [
     ["p", "Previous"],
     ["g", "Go to a specific month"],
     ["y", "Change to Year View"],
-    ["m" , "Manage events"],
+    ["m", "Manage events"],
     ["q", "Exit"],
     ["?", "Show this table"],
 ]
 
 shortcuts_in_eventview = [
-        ["a" , "Add an event"],
-        ["r" , "Remove an eventsvent "],
-        ["v" , "View all events"],
-        ["e" , "Edit an existing event"],
-        #["s" , "Save changes"],
-        ["q", "Exit"],
-        ["?" , "Show this table"],
-        ]
+    ["a", "Add an event"],
+    ["r", "Remove an eventsvent "],
+    ["v", "View all events"],
+    ["e", "Edit an existing event"],
+    # ["s" , "Save changes"],
+    ["q", "Exit"],
+    ["?", "Show this table"],
+]
 events_list = []
-options = ["Date(d)", "Location(l)" ,"Category(eg. bday)(c)" , "Start Time(st)", "End Time(et)" , "Duration(dur)"]
+options = [
+    "Date(d)",
+    "Location(l)",
+    "Category(eg. bday)(c)",
+    "Start Time(st)",
+    "End Time(et)",
+    "Duration(dur)",
+]
 
-shortcuts_in_yearview= [
+shortcuts_in_yearview = [
     ["n", "Next"],
     ["p", "Previous"],
     ["g", "Go to a specific year"],
@@ -46,32 +77,44 @@ shortcuts_in_yearview= [
 
 
 class Event:
-    def __init__(self , title ):   # , date=None, location = None,start_time = None, duration = None 
+    def __init__(
+        self, title
+    ):  # , date=None, location = None,start_time = None, duration = None
         self.title = title
-        self.date = None 
+        self.date = None
         self.location = None
-        self.start_time = None 
+        self.start_time = None
         self.end_time = None
         self.duration = None
         self.category = None
         self.addedOptions = []
-        self.allOptions = [self.title , self.date, self.location, self.start_time , self.end_time ,self.duration, self.category]
+        self.allOptions = [
+            self.title,
+            self.date,
+            self.location,
+            self.start_time,
+            self.end_time,
+            self.duration,
+            self.category,
+        ]
 
     def add(self, option, value):
         self.addedOptions.append(option)
-        setattr(self , option , value)
+        setattr(self, option, value)
 
-    def remove(self , option):
+    def remove(self, option):
         self.addedOptions.remove(option)
 
-    def update(self , option, newval):
-        setattr(self , option , newval)
+    def update(self, option, newval):
+        setattr(self, option, newval)
+
 
 def is_leap(year):
     if year % 400 == 0 or year % 100 != 0 and year % 4 == 0:
         return True
     else:
         return False
+
 
 def cal_no_of_days(month, year):
     if (month % 7) % 2 == 0 and month != 2 and month != 7:
@@ -82,11 +125,12 @@ def cal_no_of_days(month, year):
         no_of_days = 31
     return no_of_days
 
+
 def isDate(date):
-    if len(date) != 10 or date[2] != '-' or date[5] != '-':
+    if len(date) != 10 or date[2] != "-" or date[5] != "-":
         return None
-    
-    day, month, year = date.split('-')
+
+    day, month, year = date.split("-")
 
     if not (day.isdigit() and month.isdigit() and year.isdigit()):
         return None
@@ -95,43 +139,57 @@ def isDate(date):
     month = int(month)
     year = int(year)
 
-    if year < 1 or year > 9999 or month < 1 or month > 12 :
+    if year < 1 or year > 9999 or month < 1 or month > 12:
         return None
 
-    days_in_month = cal_no_of_days(month , year)
+    days_in_month = cal_no_of_days(month, year)
 
-    if day < 1 or day > days_in_month :
+    if day < 1 or day > days_in_month:
         return None
-    
+
     return day, month, year
 
+
 def isTime(time):
-    if len(time) != 5 or time[2] != ':':
+    if len(time) != 5 or time[2] != ":":
         return False
-    if not 0 <= int(time[0:2]) <=24:
+    if not 0 <= int(time[0:2]) <= 24:
         return False
-    if not 0<=int(time[3:5])<60 :
+    if not 0 <= int(time[3:5]) < 60:
         return False
     return True
 
+
 def add_event():
-    title = input('Enter event name: ')
+    title = input("Enter event name: ")
     new_event = Event(title)
     events_list.append(new_event)
 
     options = {
-        'd': ("Date", "Enter the date in DD-MM-YYYY format: ", 'date', isDate),
-        'l': ("Location", "Enter the location: ", 'location', None),
-        'c': ("Category", "Enter the category: ", 'category', None),
-        'st': ("Start Time", "Enter the time in 24 hrs HH:MM format: ", 'start_time', isTime),
-        'et': ("End Time", "Enter the time in 24 hrs HH:MM format: ", 'end_time', isTime),
-        'dur': ("Duration", "Enter duration in minutes: ", 'duration', None)
+        "d": ("Date", "Enter the date in DD-MM-YYYY format: ", "date", isDate),
+        "l": ("Location", "Enter the location: ", "location", None),
+        "c": ("Category", "Enter the category: ", "category", None),
+        "st": (
+            "Start Time",
+            "Enter the time in 24 hrs HH:MM format: ",
+            "start_time",
+            isTime,
+        ),
+        "et": (
+            "End Time",
+            "Enter the time in 24 hrs HH:MM format: ",
+            "end_time",
+            isTime,
+        ),
+        "dur": ("Duration", "Enter duration in minutes: ", "duration", None),
     }
 
     while options:
-        selected_option = input(f"Which option do you want to add? {', '.join([f'{key}: {value[0]}' for key, value in options.items()])} or type 'done' to finish: ")
+        selected_option = input(
+            f"Which option do you want to add? {', '.join([f'{key}: {value[0]}' for key, value in options.items()])} or type 'done' to finish: "
+        )
 
-        if selected_option == 'done':
+        if selected_option == "done":
             break
 
         if selected_option in options:
@@ -176,8 +234,12 @@ def edit_event():
     index = int(input("Select the event number to edit: ")) - 1
     if 0 <= index < len(events_list):
         event = events_list[index]
-        option = input("What do you want to edit? (title, date, location, time, duration): ").strip().lower()
-        if option == 'date':
+        option = (
+            input("What do you want to edit? (title, date, location, time, duration): ")
+            .strip()
+            .lower()
+        )
+        if option == "date":
             value = input("Enter new date in DD-MM-YYYY format: ")
             result = isDate(value)
             if result is None:
@@ -194,6 +256,7 @@ def edit_event():
     else:
         print("Invalid event number.")
 
+
 def view_events():
 
     if len(events_list) == 0:
@@ -206,24 +269,33 @@ def view_events():
 
 def save_events():
     for i in events_list:
-        events_table_list_for_savings.append( [getattr(i, attr) if getattr(i, attr) else "None" for attr in ['title', 'date', 'location', 'start_time', 'end_time', 'duration', 'category']])
-    if not os.path.exists('events.csv'):
-        with open('events.csv', mode='w', newline='') as csv_file:
+        events_table_list_for_savings.append(
+            [
+                getattr(i, attr) if getattr(i, attr) else "None"
+                for attr in [
+                    "title",
+                    "date",
+                    "location",
+                    "start_time",
+                    "end_time",
+                    "duration",
+                    "category",
+                ]
+            ]
+        )
+    if not os.path.exists("events.csv"):
+        with open("events.csv", mode="w", newline="") as csv_file:
             writer = csv.writer(csv_file)
-            
+
             writer.writerow(events_table_header_for_saving)
-            
+
             writer.writerows(events_table_list_for_savings)
 
     else:
-        with open('events.csv', mode='a', newline='') as csv_file:
+        with open("events.csv", mode="a", newline="") as csv_file:
             writer = csv.writer(csv_file)
-            
-            
+
             writer.writerows(events_table_list_for_savings)
-
-
-
 
 
 def cal_d(month, year):
@@ -262,10 +334,12 @@ def cal_d(month, year):
     d = 2 - a
     return d
 
+
 def reset_view(printed_lines):
     for _ in range(printed_lines):
-        print("\033[A", end='')  # Move cursor up by one line
-        print("\033[K", end='')  # Clear the current line
+        print("\033[A", end="")  # Move cursor up by one line
+        print("\033[K", end="")  # Clear the current line
+
 
 def one_line(d, no_of_days):
     for i in range(1, 8, 1):
@@ -337,6 +411,7 @@ def month_view(month, year):
 
     # print('***************')
 
+
 today = datetime.date.today()
 month = today.month
 year = today.year
@@ -347,10 +422,10 @@ month_view(month, year)
 view = "month"
 
 
-#fd = sys.stdin.fileno()  # Get file descriptor for stdin
-#old_settings = termios.tcgetattr(fd)  # Save current terminal settings
+# fd = sys.stdin.fileno()  # Get file descriptor for stdin
+# old_settings = termios.tcgetattr(fd)  # Save current terminal settings
 
-#try:
+# try:
 #    tty.setraw(fd)
 # lines_after_calendar = 0
 while True:
@@ -384,7 +459,6 @@ while True:
             month_view(month, year)
             # lines_after_calendar = 10
 
-
             # print("\03s[11A\033[J")
             # month_view(month, year)
         elif x == "y":
@@ -392,10 +466,10 @@ while True:
             view = "year"
             year_view(year)
 
-        elif x == 'g':
-            m  = int(input("Enter month no.: "))
+        elif x == "g":
+            m = int(input("Enter month no.: "))
             y = int(input("Enter year no.: "))
-            if 0 < m < 13 and y>0:
+            if 0 < m < 13 and y > 0:
                 print("\x1B[2J\x1B[H")
                 month = m
                 year = y
@@ -404,44 +478,43 @@ while True:
                 month_view(month, year)
                 # lines_after_calendar = 10
 
-
                 # month_view(month , year)
-            else :
+            else:
                 print("Month should be between 1 and 12")
 
-        elif x == 'm':
+        elif x == "m":
             shortcutsTable.clear_rows()
             shortcutsTable.add_rows(shortcuts_in_eventview)
             print(shortcutsTable)
-            
+
             while True:
 
                 x = input("Select a shortcut to continue(press ? for help):")
-                if x == 'a':
+                if x == "a":
                     add_event()
 
-                elif x == 'r':
+                elif x == "r":
                     remove_event()
 
-                elif x == 'e':
+                elif x == "e":
                     edit_event()
 
-                elif x == 'v':
+                elif x == "v":
                     view_events()
 
-                elif x == '?':
+                elif x == "?":
                     shortcutsTable.clear_rows()
                     shortcutsTable.add_rows(shortcuts_in_eventview)
                     print(shortcutsTable)
 
-                elif x == 'q':
+                elif x == "q":
                     save_events()
                     break
 
-                else :
-                    print('Invalid input.')
+                else:
+                    print("Invalid input.")
 
-        elif x == '?':
+        elif x == "?":
             shortcutsTable.clear_rows()
             shortcutsTable.add_rows(shortcuts_in_monthview)
             print(shortcutsTable)
@@ -450,34 +523,34 @@ while True:
             break
         else:
             print("Enter a valid choice")
- 
-#        elif x == "\x1b[A":
-#            year -= 1
-#            print("\x1B[2J\x1B[H")
-#            # Clear screen and move cursor to top-left corner
-#            month_view(month, year)
-#
-#        elif x == "\x1b[B":
-#            year += 1
-#            print("\x1B[2J\x1B[H")
-#            # Clear screen and move cursor to top-left corner
-#            month_view(month, year)
-#
-#        elif x == "\x1b[C":
-#            month += 1
-#            if month == 13:
-#                month = 1
-#                year += 1
-#
-#        elif x == "\x1b[D":
-#            month -= 1
-#            if month == 0:
-#                month = 12
-#                year -= 1
-#            print("\x1B[2J\x1B[H")
-#            # Clear screen and move cursor to top-left corner
-#            month_view(month, year)
-    else:   # Year view
+
+    #        elif x == "\x1b[A":
+    #            year -= 1
+    #            print("\x1B[2J\x1B[H")
+    #            # Clear screen and move cursor to top-left corner
+    #            month_view(month, year)
+    #
+    #        elif x == "\x1b[B":
+    #            year += 1
+    #            print("\x1B[2J\x1B[H")
+    #            # Clear screen and move cursor to top-left corner
+    #            month_view(month, year)
+    #
+    #        elif x == "\x1b[C":
+    #            month += 1
+    #            if month == 13:
+    #                month = 1
+    #                year += 1
+    #
+    #        elif x == "\x1b[D":
+    #            month -= 1
+    #            if month == 0:
+    #                month = 12
+    #                year -= 1
+    #            print("\x1B[2J\x1B[H")
+    #            # Clear screen and move cursor to top-left corner
+    #            month_view(month, year)
+    else:  # Year view
         if x == "n":
             year += 1
             print("\x1B[2J\x1B[H")
@@ -497,19 +570,19 @@ while True:
             # Clear screen and move cursor to top-left corner
             month_view(month, year)
 
-        elif x == 'h':
+        elif x == "h":
             print(table)
 
-        elif x == 'g':
-            y = int(input('Enter year no.: ')) 
-            if y>0:
+        elif x == "g":
+            y = int(input("Enter year no.: "))
+            if y > 0:
                 print("\x1B[2J\x1B[H")
                 year = y
                 year_view(year)
             else:
                 print("Year cannot be less than 1")
 
-        elif x == '?':
+        elif x == "?":
             shortcutsTable.clear_rows()
             shortcutsTable.add_rows(shortcuts_in_yearview)
             print(shortcutsTable)
@@ -521,6 +594,5 @@ while True:
             print("enter a valid choice")
 
 
-#finally:
+# finally:
 #    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)  # Restore original settings
-
