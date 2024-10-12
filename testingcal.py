@@ -48,18 +48,11 @@ siev.add_rows([
     ["q", "Exit and save changes"],
     ["?", "Show this table"],
 ])
-if not os.path.exists('events.csv') :
+
+if not os.path.exists('events.csv'):
     with open('events.csv', 'w') as f:
         w = csv.writer(f)
         w.writerow(events_table_header)
-else:
-    with open('events.csv' , 'r') as f:
-        l = list(csv.reader(f))
-    if len(l)== 0:
-        with open('events.csv', 'w') as f:
-            w = csv.writer(f)
-            w.writerow(events_table_header)
-
 
 def is_leap(year):
     if year % 400 == 0 or year % 100 != 0 and year % 4 == 0:
@@ -254,27 +247,22 @@ def add_event(title , date, location, time, duration, category):
 def view_event():
     E = PrettyTable()
     with open('events.csv', 'r') as f:
-        l = list(csv.reader(f))
-    print(l)
-    if len(l) == 0:
-        print('Nothing to display.')
-        return
+        r = csv.reader(f)
+        l = list(r)
     E.field_names = l[0]
     l = l[1:]
     E.add_rows(l)
     print(E)
 
 def edit_event(title, attr, newval):
-    with open('events.csv' , 'r',newline='') as f:
-        r = csv.DictReader(f)
-        fieldnames = r.fieldnames
-        l = list(r)
+    with open('events.csv' , 'r') as f:
+        l = list(csv.DictReader(f))
     for i in l:
-        if i['Title'] == title:
+        if i['title'] == title:
             i[attr] = newval
     
-    with open('events.csv' , 'w',newline='') as f:
-        writer = csv.DictWriter(f , fieldnames = fieldnames)
+    with open('events.csv' , 'w') as f:
+        writer = csv.DictWriter(f , fieldnames = r.fieldnames)
         writer.writeheader()
         writer.writerows(l)
 
@@ -284,6 +272,7 @@ today = datetime.date.today()
 month = today.month
 year = today.year
 view = 'month'
+
 month_view(month,year)
 
 print(simv)
@@ -307,7 +296,6 @@ while True:
 
         elif x == 'm':
             x = input("Enter details of events you want to add, edit, remove or view:")
-            print()
             # if x == 'v':
             #     view_event()
             #     continue
@@ -315,9 +303,7 @@ while True:
                 model="gpt-4o-mini",
                 messages=[
                     # {"role": "system", "content":"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, tell them you are not there for it. If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'. . If he want to edit then extract details like title , attribute that he want to edit , new value. If any value not tell him its required. If he want to remove then extract title. If he want to view then just put 'view' in first key i.e. 'event'"},
-                    # {"role": "system", "content":"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, tell them you are not there for it. If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'. . If he want to edit then extract details like title , attribute that he want to edit , new value. If any value not tell him its required. If he want to remove then extract title. If he want to view then just put 'view' in first key i.e. 'event'"},
-                    # {"role": "system", "content":f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, yell at them and tell them(angrily and brutally roast them, no mercy) you are not there for it. 1). If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract details like title , attribute that he want to edit , new value. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract title. 4).If he want to view then just put 'view' in first key i.e. 'event'"},
-                    {"role": "system", "content":f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, tell them you are not there for it. 1). If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract details like 'title' , 'attribute' that he want to edit , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title'. 4).If he want to view then just put 'view' in first key i.e. 'event'"},
+                    {"role": "system", "content":"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, tell them you are not there for it. 1). If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'. 2). If he want to edit then extract details like title , attribute that he want to edit , new value. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract title. 4).If he want to view then just put 'view' in first key i.e. 'event'"},
                     {
                         "role": "user",
                         "content": x, 
@@ -333,14 +319,13 @@ while True:
                 elif out['event'] == 'view':
                     view_event()
                 elif out['event'] == 'edit':
+                    # title, attr, newval = out['title']
                     print(out)
-                    title, attr, newval = out['title'], out['attribute'], out['new_value']
                     edit_event(title, attr, newval)
                 elif out['event'] == 'remove':
                     remove_event()
             except json.JSONDecodeError:
                 print(out)
-                print()
 
     else:
         if x == 'n':
