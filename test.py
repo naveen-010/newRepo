@@ -415,5 +415,10 @@ while True:
             y = int(input("Enter Year:"))
             gty(y)
         elif x == "m":
-            month_view()
-            view = "month"
+            m = input('Enter month no:')
+            if type(m) == 'int' and 1 <= int(m) <= 12:
+                month = m
+                month_view(month, year)
+                view = "month"
+            else:
+                print("Invalid input")

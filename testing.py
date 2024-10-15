@@ -1,7 +1,4 @@
-import csv
-with open('events.csv', 'r') as file:
-    reader = csv.reader(file)
-
-    # Iterate through each row in the CSV
-    for row in reader:
-        print(row) 
+import time
+for i in range(100):
+    print(i)
+    time.sleep(1)

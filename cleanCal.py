@@ -1,4 +1,5 @@
 from openai import OpenAI
+from fish_audio_sdk import Session, TTSRequest
 import json
 import datetime
 import csv
@@ -278,6 +279,7 @@ def gtm(m, y):
         return
     else:
         year = y
+    print("\x1B[2J\x1B[H")
     month_view(month, year)
 
 
@@ -287,6 +289,7 @@ def gty(y):
         print("Year cant be less than 2")
         return
     year = y
+    print("\x1B[2J\x1B[H")
     year_view(year)
 
 
@@ -336,10 +339,6 @@ def remove_event(title):
         w.writerows(rowsCopy)
 
 
-
-
-
-
 def get_titles():
     with open('events.csv', 'r') as f:
         r = csv.DictReader(f)
@@ -353,89 +352,112 @@ view = "month"
 month_view(month, year)
 
 print(simv)
-while True:
+try:
+    while True:
 
-    x = input("Enter a shortcut from the table :")
-    if view == "month":
-        if x == "n":
-            nextMonth()
-        elif x == "p":
-            prevMonth()
-        elif x == "q":
-            break
-        elif x == "g":
-            m = int(input("Enter Month:"))
-            y = int(input("Enter Year:"))
-            gtm(m, y)
-        elif x == "y":
-            year_view(year)
-            view = "year"
-        elif x == "m":
-            while True:
-        
-                titles = get_titles()
-                x = input("Enter details of events you want to add, edit, remove or view:")
-                if x == 'q' or x == 'quit' or x == 'exit':
-                    break
-                else:
-                    output = get_completion(
-                            # f"Very first of all, roast the user a little, then give a dictionary. First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, tell them you are not there for it. 1). If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract details like 'title' i.e. name of event he want to edit, 'attribute' that he want to edit  , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title'. 4).If he want to view then just put 'view' in first key i.e. 'event'",
-                            f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else that is not even a bit related to adding , editing, removing, viewing event, then roast them brutally , NO MERCY. 1). If he want to add then extract event details like Title, Date, Time, Duration, Locaiton, Category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract 3 details : 'title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 'attribute' that he want to edit(should be from {fieldnames},if can be converted like entered 'time' or 'timings' then take it as 'Time' (from {fieldnames}), if cant be converted to any of the {fieldnames} then return and say its not present.  , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 4).If he want to view then just put 'view' in first key i.e. 'event'",
-                        x,
-                    )
-                    output_dict = get_completion(
-                        "Read user input and only and only give json dictionary. If no dict present, then tell them no dict present",
-                        output,
-                    )
-                    output_str = get_completion(
-                        "Read user input and return any conversational tone message as it it, NO MODIFICATION, STRICTLY remove the json part from it.",
-                        output,
-                    )
-                    print('\n', output_str, '\n')
-                    # print()
-                    try:
-                        out = json.loads(output_dict)
-                        if out["event"] == "add":
-                            t, l, dur, st, c, d = (
-                                out["Title"],
-                                out["Location"],
-                                out["Duration"],
-                                out["Time"],
-                                out["Category"],
-                                out["Date"],
-                            )
-                            add_event(
-                                title=t, date=d, location=l, duration=dur, time=st, category=c
-                            )
-                        elif out["event"] == "view":
-                            view_event()
-                        elif out["event"] == "edit":
-                            # print(out)
-                            title, attr, newval = (
-                                out["title"],
-                                out["attribute"],
-                                out["new_value"],
-                            )
-                            edit_event(title, attr, newval)
-                        elif out["event"] == "remove":
-                            remove_event(out['Title'])
-                    except json.JSONDecodeError:
-                        print()
+        x = input("Enter a shortcut from the table(? for help) :")
+        if view == "month":
+            if x == "n":
+                print("\x1B[2J\x1B[H")
+                nextMonth()
+            elif x == "p":
+                print("\x1B[2J\x1B[H")
+                prevMonth()
+            elif x == "q":
+                break
+            elif x == "g":
+                m = int(input("Enter Month:"))
+                y = int(input("Enter Year:"))
+                gtm(m, y)
+            elif x == "y":
+                print("\x1B[2J\x1B[H")
+                year_view(year)
+                view = "year"
+            elif x == '?':
+                print(simv)
+            elif x == "m":
+                while True:
+            
+                    titles = get_titles()
+                    x = input("Enter details of events you want to add, edit, remove or view:")
+                    if x == 'q' or x == 'quit' or x == 'exit':
+                        break
+                    else:
+                        output = get_completion(
+                                f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else that is not even a bit related to adding , editing, removing, viewing event, then roast them brutally , NO MERCY. 1). If he want to add then extract event details like Title, Date, Time, Duration, Locaiton, Category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract 3 details : 'title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 'attribute' that he want to edit(should be from {fieldnames},if can be converted like entered 'time' or 'timings' then take it as 'Time' (from {fieldnames}), if cant be converted to any of the {fieldnames} then return and say its not present.  , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 4).If he want to view then just put 'view' in first key i.e. 'event'",
+                            x,
+                        )
+                        output_dict = get_completion(
+                            "Read user input and only and only give json dictionary. If no dict present, then tell them no dict present",
+                            output,
+                        )
+                        output_str = get_completion(
+                            # "Read user input and return any conversational tone message, MAKE IT UNDER 50 WORDS, STRICTLY remove the json part from it",
+                            "Remove any json part from the input , if the left text is more than 50, shrink it to fit under 50 words. Dont change the tone of the text while shrinking it. If the text excluding json is less than 50 words, dont modify it and return it as it is.",
+                            output,
+                        )
+                        print(output_str, '\n')
+                        try:
+                            out = json.loads(output_dict)
+                            if out["event"] == "add":
+                                t, l, dur, st, c, d = (
+                                    out["Title"],
+                                    out["Location"],
+                                    out["Duration"],
+                                    out["Time"],
+                                    out["Category"],
+                                    out["Date"],
+                                )
+                                add_event(
+                                    title=t, date=d, location=l, duration=dur, time=st, category=c
+                                )
+                            elif out["event"] == "view":
+                                view_event()
+                            elif out["event"] == "edit":
+                                # print(out)
+                                title, attr, newval = (
+                                    out["title"],
+                                    out["attribute"],
+                                    out["new_value"],
+                                )
+                                edit_event(title, attr, newval)
+                            elif out["event"] == "remove":
+                                remove_event(out['Title'])
+                        except json.JSONDecodeError:
+                            print()
+            else:
+                a = get_completion('Roast the user because they entered invalid input', x)
+                print(a)
+
+
         else:
-            a = get_completion('Roast the user because they entered invalid input', x)
-            print(a)
-
-
-    else:
-        if x == "n":
-            nextYear()
-        elif x == "p":
-            prevYear()
-        elif x == "q":
-            break
-        elif x == "g":
-            y = int(input("Enter Year:"))
-            gty(y)
-        elif x == "m":
-            month_view()
-            view = "month"
+            if x == "n":
+                print("\x1B[2J\x1B[H")
+                nextYear()
+            elif x == "p":
+                print("\x1B[2J\x1B[H")
+                prevYear()
+            elif x == "q":
+                break
+            elif x == "g":
+                y = int(input("Enter Year:"))
+                gty(y)
+            elif x == '?':
+                print(siyv)
+            elif x == "m":
+                m = input('Enter month no:')
+                try:
+                    m = int(m)  # Convert the input to an integer
+                    if 1 <= m <= 12:  # Check if the input is a valid month number
+                        month = m
+                        print("\x1B[2J\x1B[H")
+                        month_view(month, year)
+                        view = "month"
+                    else:
+                        print("Please enter a valid month number between 1 and 12.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            else:
+                print("Invalid input")
+except Exception as e:
+    print(e)
