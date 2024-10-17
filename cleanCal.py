@@ -1,4 +1,4 @@
-from openai import OpenAI
+from openai import OpenAI 
 from fish_audio_sdk import Session, TTSRequest
 import json
 import datetime
@@ -7,7 +7,15 @@ import os
 from prettytable import PrettyTable
 
 
+print("\x1B[2J\x1B[H")
 client = OpenAI()
+
+today = datetime.date.today()
+month = today.month
+year = today.year
+date = today.day
+view = "month"
+
 
 fieldnames = ["Title", "Date", "Location", "Time", "Duartion", "Category"]
 events = []
@@ -33,13 +41,14 @@ simv = PrettyTable()
 simv.field_names = ["Month shortcuts", "Description"]
 simv.add_rows(
     [
+        ["t", "Go to Today's Month"],
         ["n", "Next"],
         ["p", "Previous"],
         ["g", "Go to a specific month"],
         ["y", "Change to Year View"],
         ["m", "Manage events"],
         ["q", "Exit"],
-        ["?", "Show this table"],
+        # ["?", "Show this table"],
     ]
 )
 
@@ -47,6 +56,7 @@ siyv = PrettyTable()
 siyv.field_names = ["Year shortcuts", "Description"]
 siyv.add_rows(
     [
+        ["t", "Go to Today's Year"],
         ["n", "Next"],
         ["p", "Previous"],
         ["g", "Go to a specific year"],
@@ -71,7 +81,7 @@ siev.add_rows(
 if not os.path.exists("events.csv"):
     with open("events.csv", "w") as f:
         w = csv.writer(f)
-        w.writerow(events_table_header)
+        w.writerow(fieldnames)
 else:
     with open("events.csv", "r") as f:
         l = list(csv.reader(f))
@@ -85,7 +95,6 @@ def get_completion(behaviour, user_message):
     completion = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            # {'role': 'system', 'content': f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else than adding , editing, removing, viewing event, yell at them and tell them(angrily and brutally roast them, no mercy) you are not there for it but before yelling, make sure 1000 times that he dont want any of the 4 options. 1). If he want to add then extract event details like title, date, time, duration, locaiton, category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract details like 'title' , 'attribute' that he want to edit , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title'. 4).If he want to view then just put 'view' in first key i.e. 'event'. Try to understand clearly if he want to view events, showing event can also mean same."},
             {"role": "system", "content": behaviour},
             {
                 "role": "user",
@@ -138,13 +147,16 @@ def isDate(date):
 
 
 def isTime(time):
-    if len(time) != 5 or time[2] != ":":
-        return False
-    if not 0 <= int(time[0:2]) <= 24:
-        return False
-    if not 0 <= int(time[3:5]) < 60:
-        return False
-    return True
+    try:
+        if len(time) != 5 or time[2] != ":":
+            return False
+        if not 0 <= int(time[0:2]) <= 24:
+            return False
+        if not 0 <= int(time[3:5]) < 60:
+            return False
+        return True
+    except Exception as e:
+        print('\033[38;5;196mInvalid time\033[0m')
 
 
 def cal_d(month, year):
@@ -182,32 +194,35 @@ def cal_d(month, year):
     return d
 
 
-def one_line(d, no_of_days):
+def one_line(d, no_of_days, today):
     for i in range(1, 8, 1):
         if d <= 0 or d > no_of_days:
             print(" ", end="   ")
+        elif d == date and today == True:
+            print(f"\033[38;5;204m{d}\033[0m", end="  ")
         elif no_of_days >= d > 9:
-            print(d, end="  ")
+            print(f"\033[1;37m{d}\033[0m", end="  ")
         else:
-            print(d, end="   ")
+            print(f"\033[1;37m{d}\033[0m", end="   ")
         d = d + 1
 
 
 def year_view(year):
 
     if not 0 < year:
-        print("Year cannot be 0 or negative")
+        print(f"\033[38;5;196mYear cannot be 0 or negative\033[0m")
         return
 
     for monthrow in range(3):
         x = 1 + (monthrow) * 4
         y = x + 4
         for monthcol in range(x, y):
-            print(f'{f"     {months[monthcol-1]},  {year}":<28}', end="")
+            # print(f'{f"     {months[monthcol-1]},  {year}":<28}', end="")
+            print(f'\033[38;5;230m{f"     {months[monthcol-1]},  {year}":<28}\033[0m', end="")
             print("\t", end="")
         print()
         for monthcol in range(x, y):
-            print(f"Su  M   Tu  W   Th  F   Sa  ", end="")
+            print(f'\033[38;5;215mSu  M   Tu  W   Th  F   Sa  \033[0m', end="")
             print("\t", end="")
         print()
 
@@ -215,25 +230,36 @@ def year_view(year):
             for monthcol in range(x, y):
                 d = cal_d(monthcol, year) + row * 7
                 no_of_days = cal_no_of_days(monthcol, year)
-                one_line(d, no_of_days)
+                if monthcol == today.month and year == today.year:
+                    one_line(d, no_of_days, today = True)
+                else:
+                    one_line(d, no_of_days, today = False)
+
                 print("\t", end="")
             print()
 
-
+# print()
 def month_view(month, year):
     if not 1 < year:
-        print("Year cannot be negative")
+        print(f"\033[38;5;196mYear cannot be negative\033[0m")
         return
     if not 0 < month < 13:
-        print("Month should be between 1 and 12")
+        print(f"\033[38;5;196mMonth should be between 1 and 12\033[0m")
         return
 
-    print(f'{f"     {months[month-1]},  {year}":<28}')
-    print(f"Su  M   Tu  W   Th  F   Sa  ")
+    # print(f'{f"     {months[month-1]},  {year}":<28}')
+    print(f'\033[38;5;230m{f"     {months[month-1]},  {year}":<28}\033[0m')
+    # print(f"Su  M   Tu  W   Th  F   Sa  ")
+    # print(f'\033[1;34mSu  M   Tu  W   Th  F   Sa  \033[0m')
+    print(f'\033[38;5;215mSu  M   Tu  W   Th  F   Sa  \033[0m')
 
     for row in range(7):
         d, no_of_days = cal_d(month, year) + row * 7, cal_no_of_days(month, year)
-        one_line(d, no_of_days)
+        if month == today.month and year == today.year:
+            one_line(d, no_of_days, today= True)
+        else:
+            one_line(d, no_of_days, today = False)
+
         print()
 
 
@@ -272,21 +298,23 @@ def gtm(m, y):
     if 1 <= m <= 12:
         month = m
     else:
-        print("Month not in range")
+        print(f"\033[38;5;196mMonth not in range\033[0m")
         return
     if y < 2:
-        print("Year cant be less than 2")
+        print(f"\033[38;5;196mYear cant be less than 2\033[0m")
         return
     else:
         year = y
     print("\x1B[2J\x1B[H")
+    print(f'\033[38;5;230m{simv}\033[0m')
+    print()
     month_view(month, year)
 
 
 def gty(y):
     global month, year
     if y < 2:
-        print("Year cant be less than 2")
+        print(f"\033[38;5;196mYear cant be less than 2\033[0m")
         return
     year = y
     print("\x1B[2J\x1B[H")
@@ -311,7 +339,7 @@ def view_event():
     E.field_names = l[0]
     l = l[1:]
     E.add_rows(l)
-    print(E)
+    print(f'\033[38;5;230m{E}\033[0m')
     print()
 
 def edit_event(title, attr, newval):
@@ -330,6 +358,12 @@ def edit_event(title, attr, newval):
         writer.writerows(l)
 
 def remove_event(title):
+    if title == 'all':
+        with open("events.csv", "w") as f:
+           w = csv.writer(f)
+           w.writerow(fieldnames)
+           return
+
     with open('events.csv' , 'r', newline = '') as f:
         rows = list(csv.reader(f))
         rowsCopy = [row for row in rows if row[0] != title]
@@ -344,49 +378,115 @@ def get_titles():
         r = csv.DictReader(f)
         titles = [i['Title'] for i in r]
     return titles
+msg = '''
+$$\      $$\           $$\                                             $$\ 
+$$ | $\  $$ |          $$ |                                            $$ |
+$$ |$$$\ $$ | $$$$$$\  $$ | $$$$$$$\  $$$$$$\  $$$$$$\$$$$\   $$$$$$\  $$ |
+$$ $$ $$\$$ |$$  __$$\ $$ |$$  _____|$$  __$$\ $$  _$$  _$$\ $$  __$$\ $$ |
+$$$$  _$$$$ |$$$$$$$$ |$$ |$$ /      $$ /  $$ |$$ / $$ / $$ |$$$$$$$$ |\__|
+$$$  / \$$$ |$$   ____|$$ |$$ |      $$ |  $$ |$$ | $$ | $$ |$$   ____|    
+$$  /   \$$ |\$$$$$$$\ $$ |\$$$$$$$\ \$$$$$$  |$$ | $$ | $$ |\$$$$$$$\ $$\ 
+\__/     \__| \_______|\__| \_______| \______/ \__| \__| \__| \_______|\__|
+'''
+print(msg)
+                                                                        
+                                                                           
+print(f'\033[38;5;230m{simv}\033[0m')
+# print()
+# month_view(month, year)
+print()
 
-today = datetime.date.today()
-month = today.month
-year = today.year
-view = "month"
-month_view(month, year)
-
-print(simv)
 try:
     while True:
-
-        x = input("Enter a shortcut from the table(? for help) :")
+        # print(f'\033[38;5;230m{simv}\033[0m')
+        print()
+        x = input("\033[38;5;12mEnter a shortcut from the table :\033[0m")
         if view == "month":
             if x == "n":
                 print("\x1B[2J\x1B[H")
+                print(f'\033[38;5;230m{simv}\033[0m')
+                print()
                 nextMonth()
+            elif x == "t":
+                print("\x1B[2J\x1B[H")
+                print(f'\033[38;5;230m{simv}\033[0m')
+                print()
+                month_view(today.month, today.year)
+                month = today.month
+                year = today.year
             elif x == "p":
                 print("\x1B[2J\x1B[H")
+                print(f'\033[38;5;230m{simv}\033[0m')
+                print()
                 prevMonth()
             elif x == "q":
                 break
             elif x == "g":
-                m = int(input("Enter Month:"))
-                y = int(input("Enter Year:"))
+                m = int(input("\033[38;5;12mEnter Month:\033[0m"))
+                y = int(input("\033[38;5;12mEnter Year:\033[0m"))
                 gtm(m, y)
             elif x == "y":
                 print("\x1B[2J\x1B[H")
                 year_view(year)
                 view = "year"
-            elif x == '?':
-                print(simv)
+            # elif x == '?':
+            #     print(f'\033[38;5;230m{simv}\033[0m')
             elif x == "m":
                 while True:
             
                     titles = get_titles()
-                    x = input("Enter details of events you want to add, edit, remove or view:")
+                    x = input("\033[38;5;12mEnter details of events you want to add, edit, remove or view:\033[0m")
                     if x == 'q' or x == 'quit' or x == 'exit':
                         break
                     else:
-                        output = get_completion(
-                                f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do.If user talk about anything else that is not even a bit related to adding , editing, removing, viewing event, then roast them brutally , NO MERCY. 1). If he want to add then extract event details like Title, Date, Time, Duration, Locaiton, Category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract 3 details : 'title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 'attribute' that he want to edit(should be from {fieldnames},if can be converted like entered 'time' or 'timings' then take it as 'Time' (from {fieldnames}), if cant be converted to any of the {fieldnames} then return and say its not present.  , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 4).If he want to view then just put 'view' in first key i.e. 'event'",
-                            x,
-                        )
+                        mainprompt = f"""
+
+                        **Instructions:**
+
+                        1. **General Behavior**:
+                           - The first key in the dictionary must always be **'event'**, and its value should be one of the following based on the user’s intent:
+                             - `'add'`: If the user mentions adding, creating, or scheduling an event.
+                             - `'edit'`: If the user mentions changing, modifying, or updating an existing event.
+                             - `'view'`: If the user mentions viewing, showing, or checking an event.
+                             - `'remove'`: If the user mentions deleting, canceling, or removing an event.
+
+                           If the user talks about something completely unrelated to adding, editing, removing, or viewing events, **roast them mercilessly**. The roast must be witty, relevant, and **brutal but with sense**. If no roast-worthy material exists, skip the roast. Do **not force it**.
+
+                        2. **Add Event**:
+                           - If the user wants to **add** an event (whether they use terms like "add", "schedule", "create", or anything else that implies creating a new event), extract the following details from their input:
+                             - **'Title'**: Ensure the title is formal and capitalized properly. Any informal or casual phrases should be converted to a more appropriate tone. For example, "hang out with friends" becomes "Casual Gathering with Friends". **Do not lose any information**, even when adjusting the tone.
+                             - **'Date'**: Format as **DD-MM-YYYY**. If the date is not mentioned, fill it as `'None'`.
+                             - **'Time'**: Convert it to **24-hour format**. If not provided, set as `'None'`.
+                             - **'Duration'**: If mentioned, convert the duration to **minutes**. If not, fill as `'None'`.
+                             - **'Location'**: Extract the location and fill it in. If no location is provided, set as `'None'`.
+                             - **'Category'**: Assign a category based on what the user specifies (e.g., 'personal', 'work', 'leisure'). If no category is given, set it as `'None'`.
+
+                            If the user doesn’t explicitly mention they want to add something as an event but their description fits the definition of an event, use your judgment to add it anyway. Take today's date for reference as **{today}**.
+
+                        3. **Edit Event**:
+                           - If the user wants to **edit** an event (terms like "change", "modify", "update" imply this), extract the following 3 details:
+                             - **'Title'**: The name of the event they want to edit. Match it to the **closest** title from the list of available titles **{titles}**. If the user enters something like "car racing," match it to "Car Racing" or "Car Tournament", depending on what exists in **{titles}**. If no match is found, return with a message that says the event is **not present**.
+                             - **'Attribute'**: The attribute the user wants to edit (such as 'time', 'location', 'date', etc.). Match the attribute to the closest one from **{fieldnames}** (e.g., if the user types "timings", take it as 'Time'). If no match can be made, return with a message saying the attribute is **not present**.
+                             - **'New_value'**: The new value they want to assign to the chosen attribute. If the user doesn't specify the new value, return with a message saying that the **new value is required**.
+
+                        4. **Remove Event**:
+                           - If the user wants to **remove** or **delete** an event, extract the **title**:
+                           - If the user wants to remove all events, extract the title as 'all' when they use phrases like "delete all", "clear everything", or "remove all".
+                           - Match the title to the closest one from **{titles}** (similar to the "Edit" operation). If the user types something like "car racing," match it to "Car Racing" or "Car Tournament" depending on what exists in **{titles}**. If no match is found, return with a message that says the event is **not present**.
+
+                        5. **View Event**:
+                           - If the user wants to **view** an event (mentions terms like "show", "see", "display", etc.), just set the value of the `'event'` key to **'view'**. No additional data extraction is required for this operation.
+
+                        **Roast Logic**:
+                        - If the user talks about something off-topic (unrelated to adding, editing, removing, or viewing events), roast them with maximum savagery. No mercy should be shown. If they’re discussing sensitive topics like depression or making self-destructive statements, respond with brutal sarcasm, as many users ask these things for fun. Examples:
+                           - If the user says something unrelated, like "I'm thinking about giving up on everything," respond with something like: "Wow, deep thoughts for someone who can’t even schedule a simple event. Maybe focus on getting your life organized before having an existential crisis."
+                           - If they ask, "Should I even try anymore?", you could roast them with: "Try scheduling an event first; let’s start with small victories before taking on the universe."
+                           - However, if no roast-worthy material exists, don’t force it. Skip the roast.
+
+                        """
+                        output = get_completion(mainprompt, x)
+                                #  f"First key in the dictionary should be 'event' and its value should be 'add' , 'edit' , 'view' or 'remove' based on what user want to do(add, edit/change etc , view/see/show etc , delete/remove/delete all/remove all etc.).If user talk about anything else that is not even a bit related to adding , editing, removing, viewing event, then roast them brutally , NO MERCY, but the roast should make sense.If no good roast can be made on the user message  then please don't feel obligated to push yourself unnecessarily. 1). If he want to add then extract event details like Title, Date, Time, Duration, Locaiton, Category from the user input and return them in a dictionary with their values entered by user.Title should be in a proper formal langauge but dont miss any info while converting from informal to formal.Take todays date for reference as {today}.Time should be in 24 hr format, duration in minutes,date in DD-MM-YYYY format category like personal, work etc.Values that are not provided by user, fill them as 'None'.If user dont say to add it as an event then also think youserlf, if it can be consdiered as an event then add it.2). If he want to edit then extract 3 details : 'title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 'attribute' that he want to edit(should be from {fieldnames},if can be converted like entered 'time' or 'timings' then take it as 'Time' (from {fieldnames}), if cant be converted to any of the {fieldnames} then return and say its not present.  , 'new_value'. Dont change title name , take as it is given by user. If any value not tell him its required. 3). If he want to remove then extract 'Title' i.e. name of event he want to edit, take it as closest from {titles} like if can be converted like entered 'car racing' then take it as 'Car Tournament' or 'Car Racing' depending on what is present in {titles} , if cant be converted to any of the {titles} then return and say its not present. 4).If he want to view then just put 'view' in first key i.e. 'event'",
+
                         output_dict = get_completion(
                             "Read user input and only and only give json dictionary. If no dict present, then tell them no dict present",
                             output,
@@ -396,7 +496,7 @@ try:
                             "Remove any json part from the input , if the left text is more than 50, shrink it to fit under 50 words. Dont change the tone of the text while shrinking it. If the text excluding json is less than 50 words, dont modify it and return it as it is.",
                             output,
                         )
-                        print(output_str, '\n')
+                        print(f'\033[38;5;85m{output_str}\033[0m')
                         try:
                             out = json.loads(output_dict)
                             if out["event"] == "add":
@@ -416,48 +516,55 @@ try:
                             elif out["event"] == "edit":
                                 # print(out)
                                 title, attr, newval = (
-                                    out["title"],
-                                    out["attribute"],
-                                    out["new_value"],
-                                )
+                                    out["Title"],
+                                    out["Attribute"],
+                                    out["New_value"],
+                                    )
                                 edit_event(title, attr, newval)
                             elif out["event"] == "remove":
-                                remove_event(out['Title'])
+                                    remove_event(out['Title'])
                         except json.JSONDecodeError:
                             print()
             else:
-                a = get_completion('Roast the user because they entered invalid input', x)
-                print(a)
+                # a = get_completion('Roast the user because they entered invalid input', x)
+                # print(f'\033[38;5;85m{a}\033[0m')
+                print(f"\033[38;5;196mInvalid input\033[0m")
 
 
         else:
             if x == "n":
                 print("\x1B[2J\x1B[H")
                 nextYear()
+            elif x == 't':
+                print("\x1B[2J\x1B[H")
+                year_view(today.year)
+                year = today.year
             elif x == "p":
                 print("\x1B[2J\x1B[H")
                 prevYear()
             elif x == "q":
                 break
             elif x == "g":
-                y = int(input("Enter Year:"))
+                y = int(input("\033[38;5;12mEnter Year:\033[0m"))
                 gty(y)
             elif x == '?':
-                print(siyv)
+                print(f'\033[38;5;230m{siyv}\033[0m')
             elif x == "m":
-                m = input('Enter month no:')
+                m = int(input("\033[38;5;12mEnter Month:\033[0m"))
                 try:
                     m = int(m)  # Convert the input to an integer
                     if 1 <= m <= 12:  # Check if the input is a valid month number
                         month = m
                         print("\x1B[2J\x1B[H")
+                        print(f'\033[38;5;230m{simv}\033[0m')
+                        print()
                         month_view(month, year)
                         view = "month"
                     else:
-                        print("Please enter a valid month number between 1 and 12.")
+                        print("\033[38;5;196mPlease enter a valid month number between 1 and 12.\033[0m")
                 except ValueError:
-                    print("Invalid input. Please enter a number.")
+                    print(f"\033[38;5;196mInvalid input. Please enter a number.\033[0m")
             else:
-                print("Invalid input")
+                print(f"\033[38;5;196mInvalid input\033[0m")
 except Exception as e:
-    print(e)
+    print(f'\033[38;5;196m{e}\033[0m')
