@@ -1,0 +1,4 @@
+openai
+fish-audio-sdk
+jsonlib  # json is a standard library, but jsonlib might be required for additional functionality
+prettytable
