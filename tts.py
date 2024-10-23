@@ -1,52 +1,59 @@
 import replicate
 import requests
 import os
-from playsound import playsound
-import pygame
 import time
 from openai import OpenAI
-
+from pydub import AudioSegment
+import threading
+import pygame
+from pydub.playback import play
+import httpx
 replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
+#  client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"), transport=httpx.AsyncHTTPTransport(verify=False))
 
-def tts(text):
-    refaudio = open('/home/zoe/Downloads/replicate-prediction-sp0dk1aj1nrj20cjhe1sn2pzqr.wav', 'rb') #default girl voice on replicate
-    #  refaudio = "https://c97f3361a1c971323738e24f451a0225.r2.cloudflarestorage.com/fish-platform-data/task/6ca5de953b9e4ef0a6d64dbc2346919d.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=45aaffe6f2c5f28b260e2165001da8ad%2F20241022%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20241022T142605Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=c65dc6c1311229c597c151029153f3478aceaa9d93f9d6a8d6e3e9659eb493de"
-    refaudio = open('/home/zoe/Videos/obs/trump_speech.mkv' , 'rb')
+def print_text_slowly(text, audio_duration):
+    words = text.split()  # Split text into words
+    time_per_word = audio_duration / len(words)  # Calculate time per word
+
+    for word in words:
+        print(word, end=' ', flush=True)  # Print each word with a space
+        time.sleep(time_per_word)  # Wait for the calculated time
+
+def play_audio(file):
+    pygame.mixer.init()  # Initialize the mixer
+    pygame.mixer.music.load(file)  # Load the audio file
+    pygame.mixer.music.play()  # Play the audio
 
 
-    #  try:
+
+def playtts(text):
+
+    #  refaudio = open('/home/zoe/Videos/obs/2024-10-22_23-41-59.mkv' , 'rb')
+    refaudio = open('/home/zoe/Videos/obs/trump_speech_trimmed.mkv', 'rb')
+
     output = replicate.run(
         "x-lance/f5-tts:87faf6dd7a692dd82043f662e76369cab126a2cf1937e25a9d41e0b834fd230e",
         input={
             "speed": 1,
             "gen_text": text,
             #  "ref_text": "captain teemo, on duty!",
-            "ref_text": "Before I even arrive at the oval office, I will have the disastrous war between Russia and Ukraine settled.",
+            "ref_text": "Before I even arrive at the oval office, I will have the disastrous war between Russia and Ukrain settled.",
             "ref_audio": refaudio,
-            "remove_silence" : True,
-            "custom_split_words": ""
         }
-        #  timeout = 60
     )
-    return output
-    #  except httpx.ReadTimeout:
-            #  print("The request timed out. Please try again.")
-            #  return None
-def download_and_play_audio(url):
-    # Download the audio file
-    response = requests.get(url)
+    response = requests.get(output)
     if response.status_code == 200:
         with open("temporary_audio.wav", "wb") as f:
             f.write(response.content)
-        pygame.mixer.init()
-        pygame.mixer.music.load("/home/zoe/Jupyter/Python/Calendar/temporary_audio.wav")  # Replace with your audio file path
-
-        pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            time.sleep(1)       
-        
+        play_audio("/home/zoe/Jupyter/Python/Calendar/temporary_audio.wav")
+        print('\033[38;5;85mChatgpt: \033[0m', end = '')
+        audio = AudioSegment.from_file("/home/zoe/Jupyter/Python/Calendar/temporary_audio.wav")
+        audio_duration = len(audio)/1000
+        print_text_slowly(text, audio_duration)
+        print()
+        print()
+       
         os.remove("temporary_audio.wav")
-        print("Temporary file deleted.")
     else:
         print(f"Failed to download the file. Status code: {response.status_code}")
 
@@ -73,6 +80,5 @@ u = 'a'
 while u != 'q':
     u = input("\033[38;5;85mYou: \033[0m")
     out = get_completion(u)
-    print("\033[38;5;85mChatgpt: \033[0m", out)
-    download_and_play_audio(tts(out))
+    playtts(out)
 
